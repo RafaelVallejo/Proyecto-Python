@@ -9,7 +9,7 @@ class AccountStatistics(object):
         self.number_of_tweets_to_other_site = 0
         self.list_of_tweets_to_other_site = []
         self.tweets_geolocalizados  = 0
-        self.list_of_tweets_geolocalozados = []
+        self.list_of_tweets_geolocalizados = []
         self.tweets_with_device_info = 0
         self.list_of_tweets_device_info = []
         self.tweets_generated_other_accounts = 0
