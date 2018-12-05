@@ -43,15 +43,6 @@ def muestraAyuda():
     -v, --verboso   Muestra los pasos que se realizan.\n\
     -o, --reporte   Indica el nombre del archivo dónde se escribirá el reporte.'
 
-
-def infoCuenta(api):
-    me = api.me()
-    print 'Nombre: ' + me.name
-    print'Nombre de usuario: @' + me.screen_name
-    print 'Imagen de perfil: %s' % (me.profile_image_url)
-    print 'Fecha de creación de la cuenta: %s' % (me.created_at)
-    print 'Número de tweets: %s' % (me.statuses_count)
-    print 'Número de tweets agregados a favoritos: %s' % (me.favourites_count)
 def infoUsuario(api, usuario):
     user = api.get_user(usuario)
     print 'Nombre: ' + user.name
@@ -61,6 +52,14 @@ def infoUsuario(api, usuario):
     print 'Número de tweets: %s' % (user.statuses_count)
     print 'Número de tweets agregados a favoritos: %s' % (user.favourites_count)
 
+def hashtagsUtilizados(api, usuario):
+    public_tweets = getAllTweets(usuario)
+    lista_hashtags = []
+    for tweet in public_tweets:
+        for hashtag in tweet.entities.get('hashtags'):
+            lista_hashtags.append('#' + hashtag['text'].encode('utf8'))
+    lista_hashtags = list(set(lista_hashtags))
+    return lista_hashtags
 
 def getAllTweets(account_name):
     return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items()]
@@ -84,12 +83,7 @@ if __name__ == '__main__':
     opts = addOptions()
     checkOptions(opts)
     api = authenticate()
-    #infoCuenta(api)
     if opts.help:
         muestraAyuda()
     else:
         infoUsuario(api,opts.usuario)
-        public_tweets = api.user_timeline(id=opts.usuario,count=10)
-        for tweet in public_tweets:
-            for hashtag in tweet.entities.get('hashtags'):
-                print '#%s' % (hashtag['text'])
