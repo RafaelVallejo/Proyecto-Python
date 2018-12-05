@@ -1,0 +1,32 @@
+.imagen{
+	display: block;
+	margin: auto;
+	width: 400px;
+	height: 100px;
+}
+
+.h3{
+	font-family: Modern;
+	text-align: center;
+}
+
+body{
+	background-color: #FFFFFF;
+
+}
+
+.btn{
+	border: none;
+	color: white;
+	padding:14px 28px;
+	cursor: pointer;
+	font-size: 16px;
+}	
+
+.info{
+	background-color: #2196F3;
+}
+
+.danger{
+	background-color: #f44336;
+}
