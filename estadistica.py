@@ -1,4 +1,4 @@
-def obtenerEstadistica(objeto):
+def obtener_estadistica(objeto):
 	html = '''
 <!DOCTYPE html>
 <html>
