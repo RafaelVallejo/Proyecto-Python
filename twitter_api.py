@@ -71,4 +71,5 @@ if __name__ == '__main__':
         infoUsuario(api,opts.usuario)
         public_tweets = api.user_timeline(id=opts.usuario,count=10)
         for tweet in public_tweets:
-            print tweet.entities.get('hashtags')
+            for hashtag in tweet.entities.get('hashtags'):
+                print '#%s' % (hashtag['text'])
