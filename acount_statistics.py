@@ -22,7 +22,7 @@ class AccountStatistics(object):
 
 
 
-class Tweet(objetc):
+class Tweet(object):
 
     def __init__(self,date,fragment,url):
         self.date = date
