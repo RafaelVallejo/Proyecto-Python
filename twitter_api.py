@@ -6,6 +6,7 @@ import tweepy
 import auth_credentials as cred
 import optparse
 import sys
+import acount_statistics
 def authenticate():
     auth = tweepy.OAuthHandler(cred.consumer_key, cred.consumer_secret)
     auth.set_access_token(cred.access_token, cred.access_token_secret)
@@ -83,12 +84,19 @@ def printTweetInfo(tweet):
     print "Time-zone:", tweet.user.time_zone
     print "Geo:", tweet.geo
     print "//////////////////"
-
-if __name__ == '__main__':
+    
+def startAnalisys():
     opts = addOptions()
     checkOptions(opts)
+    accout_analisys = AccountStatistics()
     api = authenticate()
     if opts.help:
         muestraAyuda()
-    else:
-        infoUsuario(api,opts.usuario)
+        printError('',True)
+    for tweet in getAllTweets(opts.usuario, 2000):
+        pass
+        
+ 
+if __name__ == '__main__':
+    startAnalisys()
+    
