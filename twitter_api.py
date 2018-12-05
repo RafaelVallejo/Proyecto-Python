@@ -61,8 +61,13 @@ def hashtagsUtilizados(api, usuario):
     lista_hashtags = list(set(lista_hashtags))
     return lista_hashtags
 
-def getAllTweets(account_name):
-    return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items()]
+def getAllTweets(account_name, number_of_tweets):
+    try:
+        return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items(number_of_tweets)]
+    except tweepy.TweepError as e:
+        printError('Usuario no encontrado',True)
+
+
 
 def dumpTweetToJson(tweet):
     return json.dumps(tweet._json)
