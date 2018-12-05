@@ -60,6 +60,26 @@ def infoUsuario(api, usuario):
     print 'Fecha de creación de la cuenta: %s' % (user.created_at)
     print 'Número de tweets: %s' % (user.statuses_count)
     print 'Número de tweets agregados a favoritos: %s' % (user.favourites_count)
+
+
+def getAllTweets(account_name):
+    return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items()]
+
+def dumpTweetToJson(tweet):
+    return json.dumps(tweet._json)
+
+def printTweetInfo(tweet):
+    print "Name:", tweet.author.name.encode('utf8')
+    print "Screen-name:", tweet.author.screen_name.encode('utf8')
+    print "Tweet created:", tweet.created_at
+    print "Tweet:", tweet.text.encode('utf8')
+    print "Retweeted:", tweet.retweeted
+    print "Favourited:", tweet.favorited
+    print "Location:", tweet.user.location.encode('utf8')
+    print "Time-zone:", tweet.user.time_zone
+    print "Geo:", tweet.geo
+    print "//////////////////"
+
 if __name__ == '__main__':
     opts = addOptions()
     checkOptions(opts)
