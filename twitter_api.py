@@ -29,10 +29,10 @@ def addOptions():
     opts,args = parser.parse_args()
     return opts
 
-def createVerbose(verbose, string): 
-    if verbose: 
+def createVerbose(verbose, string):
+    if verbose:
         print string
-        
+
 def printError(msg, exit = False):
     """Función que imprime mensaje de error y sale del programa
         Recibe: mensaje a mostrar y booleano que indica si se debe terminar la ejecución del programa"""
@@ -58,7 +58,7 @@ def muestraAyuda():
     -n', '--tweets  Indica el número de tweets a analizar de 1 a 3000.'
 
 def infoUsuario(api, usuario, verbose):
-    createVerbose(verbose, "Analizando usuario") 
+    createVerbose(verbose, "Analizando usuario")
     """Función que obtiene la información del usuario a analizar mediante la bandera -c usuario
     Recibe: api y usuario a analizar"""
     user = api.get_user(usuario)
@@ -77,9 +77,9 @@ def hashtagsUtilizados(statistic_object, tweet, verbose):
         ht = '#' + hashtag['text'].encode('utf8')
         if ht not in statistic_object.list_used_hashtags:
             statistic_object.list_used_hashtags.append(ht)
-            
+
 def tweetsLinksToOtherSite(statistics_object, tweet, verbose):
-    createVerbose(verbose, "Buscando enlaces a otros sitios") 
+    createVerbose(verbose, "Buscando enlaces a otros sitios")
     """Función que busca en cada tweet los enlaces a otros sitos y los agrega a la lista de tweets a otros sitios
     Recibe: lista y tweet a analizar"""
     for linkToOther in tweet.entities.get('urls'):
@@ -110,7 +110,7 @@ def llenaDiccionarioTweetsDias(dic_tweets_dias, dias):
     dic_tweets_dias['Domingo'] = dias[6]
 
 def linksToMultiMedia(statistics_object, tweet, verbose):
-    createVerbose(verbose, "Buscando enlaces directos al contenido multimedia") 
+    createVerbose(verbose, "Buscando enlaces directos al contenido multimedia")
     """Función que busca los enlaces directos al contenido multimedia por el usuario y los almacena en la lista que contiene estos enlaces, tanto de fotos como videos
     Recibe: lista donde se almacenan los enlaces y el tweet a anlizar"""
     if 'media' in tweet.entities:
@@ -161,7 +161,7 @@ def urlForTweet(statistic_object, tweet, verbose):
     return True
 
 def tweetToOtherAccounts(statistic_object, tweet, verbose):
-    createVerbose(verbose, "Obteniendo tweets generados a otras cuentas") 
+    createVerbose(verbose, "Obteniendo tweets generados a otras cuentas")
     texto = tweet.text.encode('utf-8')
     screen_name = tweet.author.screen_name.encode('utf8')
     if texto.startswith("RT @"):
@@ -174,7 +174,7 @@ def tweetToOtherAccounts(statistic_object, tweet, verbose):
 
 
 def tweetDevice(statistic_object, tweet, verbose):
-    createVerbose(verbose, "Obteniendo información de los dispostivos que han ocupado esta cuenta") 
+    createVerbose(verbose, "Obteniendo información de los dispostivos que han ocupado esta cuenta")
     tweet_id = getTweetId(tweet)
     j = dumpTweetToJson(tweet)['source'].lower()
     if 'iphone' in j:
@@ -202,7 +202,7 @@ def getActivityByHour(statistic_object, tweet, verbose):
     return True
 
 def getHourOfActivity(statistic_object, verbose):
-    createVerbose(verbose, "Obteniendo la hora con mayor actividad") 
+    createVerbose(verbose, "Obteniendo la hora con mayor actividad")
     mayor = max(statistic_object.activity_by_hour)
     size  = len(statistic_object.activity_by_hour)
     s = 0
@@ -214,7 +214,7 @@ def getHourOfActivity(statistic_object, verbose):
 
 def tweetGeolocalization(statistic_object, tweet, verbose):
     try:
-        createVerbose(verbose, "Obteniendo la localización)
+        createVerbose(verbose, "Obteniendo la localización")
         j = dumpTweetToJson(tweet)
         if not j['geo']:
             #print 'No se puede obtener la geolocalizacion'
@@ -225,33 +225,34 @@ def tweetGeolocalization(statistic_object, tweet, verbose):
         return False
     return True
 
-def startAnalisys(verbose):
-                    
+def startAnalisys():
+
     opts = addOptions()
     checkOptions(opts)
     account_analisys = AccountStatistics()
     api = authenticate()
+    verbose = opts.verboso
     if opts.help:
         muestraAyuda()
         printError('',True)
-    tweets = getAllTweets(opts.usuario, 20, api)
+    tweets = getAllTweets(opts.usuario, 20, api, verbose)
     dias = [0, 0, 0, 0, 0, 0, 0]
-    infoUsuario(api,opts.usuario)
+    infoUsuario(api,opts.usuario, verbose)
     #print len(tweets)
     #raw_input()
-    createVerbose(verbose, "Empezando a hacer el análisis") 
+    createVerbose(verbose, "Empezando a hacer el análisis")
     for tweet in tweets:
-        urlForTweet(account_analisys, tweet)
-        tweetToOtherAccounts(account_analisys,tweet)
-        tweetDevice(account_analisys, tweet)
-        tweetGeolocalization(account_analisys, tweet)
-        getActivityByHour(account_analisys, tweet)
-        hashtagsUtilizados(account_analisys, tweet)
-        tweetsLinksToOtherSite(account_analisys, tweet)
-        linksToMultiMedia(account_analisys, tweet)
-        tweetsPerDay(dias, tweet)
+        urlForTweet(account_analisys, tweet, verbose)
+        tweetToOtherAccounts(account_analisys,tweet, verbose)
+        tweetDevice(account_analisys, tweet, verbose)
+        tweetGeolocalization(account_analisys, tweet, verbose)
+        getActivityByHour(account_analisys, tweet, verbose)
+        hashtagsUtilizados(account_analisys, tweet, verbose)
+        tweetsLinksToOtherSite(account_analisys, tweet, verbose)
+        linksToMultiMedia(account_analisys, tweet, verbose)
+        tweetsPerDay(dias, tweet, verbose)
 
-    for tweet in getAllTweetsMentions(api, opts.usuario, 15):  # Checar limite de 100
+    for tweet in getAllTweetsMentions(api, opts.usuario, 15, verbose):  # Checar limite de 100
         account_analisys.list_tweets_mention_accout.append('@'+tweet.author.screen_name.encode('utf8'))
 
     """for k,v in account_analisys.analized_tweets_url.items():
@@ -269,7 +270,7 @@ def startAnalisys(verbose):
     for e in account_analisys.list_of_tweets_device_info:
         print e[1]
     print '\n\n****************************************************'"""
-    getHourOfActivity(account_analisys)
+    getHourOfActivity(account_analisys, verbose)
     llenaDiccionarioTweetsDias(account_analisys.tweets_for_day, dias)
     fillInfoNumbers(account_analisys)
 
