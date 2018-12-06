@@ -90,15 +90,15 @@ def obtener_estadistica(objeto):
 	   objeto.tweets_for_day,
 	   objeto.hour_of_max_activity, 
 	   objeto.number_of_tweets_to_other_site, 
-	   objeto.list_of_tweets_to_other_site,
+	   listaToCadena(objeto.list_of_tweets_to_other_site),
 	   objeto.tweets_geolocalizados, 
-	   objeto.list_of_tweets_geolocalizados,
+	   listaToCadena(objeto.list_of_tweets_geolocalizados),
 	   objeto.tweets_with_device_info,
-	   objeto.list_of_tweets_device_info,
+	   listaToCadena(objeto.list_of_tweets_device_info),
 	   objeto.tweets_generated_other_accounts 
-	   objeto.list_tweets_generated_other_accounts,
+	   listaToCadena(objeto.list_tweets_generated_other_accounts),
 	   objeto.tweets_mention_accout, 
-	   objeto.list_tweets_mention_accout,
+	   listaToCadena(objeto.list_tweets_mention_accout),
 	   objeto.analized_tweets_url,
 	   objeto.content_multimedia_tweets_url
 	   )
@@ -106,6 +106,10 @@ def obtener_estadistica(objeto):
 		
 	with open ("resultados_generados.html" , 'w') as resultados: 
 		resultados.write(html)
+	
+def listaToCadena(lista): 
+	cadena = ",".join(lista)
+		
 
 
 
