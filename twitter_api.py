@@ -7,8 +7,13 @@ import tweepy
 import auth_credentials as cred
 import optparse
 import sys
-from acount_statistics import AccountStatistics, Tweet
+from account_statistics import AccountStatistics, Tweet
+import datetime
+import json
+
 def authenticate():
+    """Función para autorizar acceso del script a la cuenta de Twitter
+    Devuelve la sesión autorizada y disponible para usar la API de Twitter"""
     auth = tweepy.OAuthHandler(cred.consumer_key, cred.consumer_secret)
     auth.set_access_token(cred.access_token, cred.access_token_secret)
     return tweepy.API(auth)
@@ -20,6 +25,7 @@ def addOptions():
     parser.add_option('-c', '--usuario', dest= 'usuario', default = None, help = 'Cuenta de usuario a analizar.')
     parser.add_option('-v', '--verboso', action='store_true', dest = 'verboso', default = False, help = 'Muestra los pasos que se realizan.')
     parser.add_option('-o', '--reporte', dest= 'reporte', default = None, help = 'Indica el nombre del archivo dónde se escribirá el reporte.')
+    parser.add_option('-n', '--tweets', dest = 'tweets', type = 'int', default = 1, help = 'Indica el número de tweets a analizar de 1 a 3000.')
     opts,args = parser.parse_args()
     return opts
 
@@ -35,7 +41,8 @@ def checkOptions(options):
     if options.help is False:
         if options.usuario is None:
             printError('Debes especificar el usuario a analizar.', True)
-
+    if int(options.tweets) > 3000:
+        printError('El número supera el límite de 3000 tweets.', True)
 
 def muestraAyuda():
     print 'Uso: %s [opciones]' % (sys.argv[0])
@@ -43,31 +50,82 @@ def muestraAyuda():
     -h, --help      Muestra el mensaje de ayuda y las opciones disponibles.\n\
     -c, --usuario   Cuenta de usuario a analizar.\n\
     -v, --verboso   Muestra los pasos que se realizan.\n\
-    -o, --reporte   Indica el nombre del archivo dónde se escribirá el reporte.'
+    -o, --reporte   Indica el nombre del archivo dónde se escribirá el reporte.\n\
+    -n', '--tweets  Indica el número de tweets a analizar de 1 a 3000.'
 
 def infoUsuario(api, usuario):
+    """Función que obtiene la información del usuario a analizar mediante la bandera -c usuario
+    Recibe: api y usuario a analizar"""
     user = api.get_user(usuario)
     print 'Nombre: ' + user.name
     print'Nombre de usuario: @' + user.screen_name
     print 'Imagen de perfil: %s' % (user.profile_image_url)
-    print 'Fecha de creación de la cuenta: %s' % (user.created_at)
+    print 'Fecha de creación de la cuenta: %s' % (user.created_at.strftime("%d/%m/%Y"))
     print 'Número de tweets: %s' % (user.statuses_count)
     print 'Número de tweets agregados a favoritos: %s' % (user.favourites_count)
 
-def hashtagsUtilizados(api, usuario):
-    public_tweets = getAllTweets(usuario)
-    lista_hashtags = []
-    for tweet in public_tweets:
-        for hashtag in tweet.entities.get('hashtags'):
-            lista_hashtags.append('#' + hashtag['text'].encode('utf8'))
-    lista_hashtags = list(set(lista_hashtags))
-    return lista_hashtags
+def hashtagsUtilizados(statistic_object, tweet):
+    """Función que busca los hashtags utilizados en cada tweet y los va agregando a la lista de hashtags
+    Recibe: lista y tweet a analizar"""
+    for hashtag in tweet.entities.get('hashtags'):
+        ht = '#' + hashtag['text'].encode('utf8')
+        if ht not in statistic_object.list_used_hashtags:
+            statistic_object.list_used_hashtags.append(ht)
+def tweetsLinksToOtherSite(statistics_object, tweet):
+    """Función que busca en cada tweet los enlaces a otros sitos y los agrega a la lista de tweets a otros sitios
+    Recibe: lista y tweet a analizar"""
+    for linkToOther in tweet.entities.get('urls'):
+        statistics_object.list_of_tweets_to_other_site.append(linkToOther['expanded_url'].encode('utf8'))
+
+def tweetsPerDay(dias, tweet):
+    """Función que va incrementando el número de tweets que se hacen por cierto día de acuerdo al tweet que se analice
+    Recibe: lista con un contador por cada uno de los días de la semana y el tweet a analizar"""
+    dia = tweet.created_at.strftime("%A")
+    if dia == 'Monday': dias[0] += 1
+    elif dia == 'Tuesday': dias[1] += 1
+    if dia == 'Wednesday': dias[2] += 1
+    elif dia == 'Thursday': dias[3] += 1
+    if dia == 'Friday': dias[4] += 1
+    elif dia == 'Saturday': dias[5] += 1
+    elif dia == 'Sunday': dias[6] += 1
+
+def llenaDiccionarioTweetsDias(dic_tweets_dias, dias):
+    """Función para llenar el diccionario que indica el número de tweets que se realizaron por cada día de la semana, de acuerdo a los tweets analizados en total
+    Recibe: diccionario y lista con los contadores de los tweets por día"""
+    dic_tweets_dias['Lunes'] = dias[0]
+    dic_tweets_dias['Martes'] = dias[1]
+    dic_tweets_dias['Miércoles'] = dias[2]
+    dic_tweets_dias['Jueves'] = dias[3]
+    dic_tweets_dias['Viernes'] = dias[4]
+    dic_tweets_dias['Sábado'] = dias[5]
+    dic_tweets_dias['Domingo'] = dias[6]
+
+def linksToMultiMedia(statistics_object, tweet):
+    """Función que busca los enlaces directos al contenido multimedia por el usuario y los almacena en la lista que contiene estos enlaces, tanto de fotos como videos
+    Recibe: lista donde se almacenan los enlaces y el tweet a anlizar"""
+    if 'media' in tweet.entities:
+        for linkToMutimedia in tweet.extended_entities.get('media'):
+            if linkToMutimedia['type'] == 'video':
+                enlace = linkToMutimedia['video_info']['variants'][0]['url'].encode('utf8')
+            else:
+                enlace = linkToMutimedia['media_url'].encode('utf8')
+            statistics_object.content_multimedia_tweets_url.append(enlace)
+
+def fillInfoNumbers(statistics_object):
+    statistics_object.tweets_mention_accout = len(statistics_object.list_tweets_mention_accout)
+    statistics_object.number_of_tweets_to_other_site = len(statistics_object.list_of_tweets_to_other_site)
+    statistics_object.number_used_hashtags = len(statistics_object.list_used_hashtags)
+
 
 def getAllTweets(account_name, number_of_tweets, api):
-    try:
-        return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items(number_of_tweets)]
-    except tweepy.TweepError as e:
-        printError('Usuario no encontrado',True)
+    """Función para obtener los n tweets que se manden en la bandera -n, por defecto será uno. Los tweets solicitados serán almacenados y devueltos en una lista.
+    Recibe: api, usuario y número de tweets a obtener. Devuelve: lista con todos los tweets solicitados"""
+    return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items(number_of_tweets)]
+
+def getAllTweetsMentions(api, account_name, number_of_tweets):
+    """Función para obtener los n tweets donde se haga mención del usuario analizados, por defecto será uno. Los tweets encontrados serán almacenados y devueltos en una lista.
+    Recibe: api, usuario y número de tweets a buscar. Devuelve: lista con todos los tweets donde se mencione al usuario"""
+    return [tweet for tweet in tweepy.Cursor(api.search,q='@%s -RT' % account_name).items(number_of_tweets) ]
 
 def dumpTweetToJson(tweet):
     return json.loads(json.dumps(tweet._json))
@@ -159,7 +217,8 @@ def startAnalisys():
         muestraAyuda()
         printError('',True)
     tweets = getAllTweets(opts.usuario, 20, api)
-
+    dias = [0, 0, 0, 0, 0, 0, 0]
+    infoUsuario(api,opts.usuario)
     #print len(tweets)
     #raw_input()
     for tweet in tweets:
@@ -168,7 +227,14 @@ def startAnalisys():
         tweetDevice(account_analisys, tweet)
         tweetGeolocalization(account_analisys, tweet)
         getActivityByHour(account_analisys, tweet)
-    
+        hashtagsUtilizados(account_analisys, tweet)
+        tweetsLinksToOtherSite(account_analisys, tweet)
+        linksToMultiMedia(account_analisys, tweet)
+        tweetsPerDay(dias, tweet)
+
+    for tweet in getAllTweetsMentions(api, opts.usuario, 15):  # Checar limite de 100
+        account_analisys.list_tweets_mention_accout.append('@'+tweet.author.screen_name.encode('utf8'))
+
     """for k,v in account_analisys.analized_tweets_url.items():
         print '%s   %s'%(k,v)
 
@@ -185,8 +251,11 @@ def startAnalisys():
         print e[1]
     print '\n\n****************************************************'"""
     getHourOfActivity(account_analisys)
-        
- 
+    llenaDiccionarioTweetsDias(account_analisys.tweets_for_day, dias)
+    fillInfoNumbers(account_analisys)
+
 if __name__ == '__main__':
-    startAnalisys()
-    
+    try:
+        startAnalisys()
+    except tweepy.TweepError as e:
+        printError('Usuario no encontrado',True)
