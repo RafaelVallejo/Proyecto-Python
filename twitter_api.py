@@ -57,7 +57,8 @@ def muestraAyuda():
     -o, --reporte   Indica el nombre del archivo dónde se escribirá el reporte.\n\
     -n', '--tweets  Indica el número de tweets a analizar de 1 a 3000.'
 
-def infoUsuario(api, usuario):
+def infoUsuario(api, usuario, verbose):
+    createVerbose(verbose, "Analizando usuario") 
     """Función que obtiene la información del usuario a analizar mediante la bandera -c usuario
     Recibe: api y usuario a analizar"""
     user = api.get_user(usuario)
@@ -68,20 +69,24 @@ def infoUsuario(api, usuario):
     print 'Número de tweets: %s' % (user.statuses_count)
     print 'Número de tweets agregados a favoritos: %s' % (user.favourites_count)
 
-def hashtagsUtilizados(statistic_object, tweet):
+def hashtagsUtilizados(statistic_object, tweet, verbose):
+    createVerbose(verbose, "Buscando hashtags utilizados")
     """Función que busca los hashtags utilizados en cada tweet y los va agregando a la lista de hashtags
     Recibe: lista y tweet a analizar"""
     for hashtag in tweet.entities.get('hashtags'):
         ht = '#' + hashtag['text'].encode('utf8')
         if ht not in statistic_object.list_used_hashtags:
             statistic_object.list_used_hashtags.append(ht)
-def tweetsLinksToOtherSite(statistics_object, tweet):
+            
+def tweetsLinksToOtherSite(statistics_object, tweet, verbose):
+    createVerbose(verbose, "Buscando enlaces a otros sitios") 
     """Función que busca en cada tweet los enlaces a otros sitos y los agrega a la lista de tweets a otros sitios
     Recibe: lista y tweet a analizar"""
     for linkToOther in tweet.entities.get('urls'):
         statistics_object.list_of_tweets_to_other_site.append(linkToOther['expanded_url'].encode('utf8'))
 
-def tweetsPerDay(dias, tweet):
+def tweetsPerDay(dias, tweet, verbose):
+    createVerbose(verbose, "Calculando los tweets por día")
     """Función que va incrementando el número de tweets que se hacen por cierto día de acuerdo al tweet que se analice
     Recibe: lista con un contador por cada uno de los días de la semana y el tweet a analizar"""
     dia = tweet.created_at.strftime("%A")
@@ -104,7 +109,8 @@ def llenaDiccionarioTweetsDias(dic_tweets_dias, dias):
     dic_tweets_dias['Sábado'] = dias[5]
     dic_tweets_dias['Domingo'] = dias[6]
 
-def linksToMultiMedia(statistics_object, tweet):
+def linksToMultiMedia(statistics_object, tweet, verbose):
+    createVerbose(verbose, "Buscando enlaces directos al contenido multimedia") 
     """Función que busca los enlaces directos al contenido multimedia por el usuario y los almacena en la lista que contiene estos enlaces, tanto de fotos como videos
     Recibe: lista donde se almacenan los enlaces y el tweet a anlizar"""
     if 'media' in tweet.entities:
@@ -121,12 +127,14 @@ def fillInfoNumbers(statistics_object):
     statistics_object.number_used_hashtags = len(statistics_object.list_used_hashtags)
 
 
-def getAllTweets(account_name, number_of_tweets, api):
+def getAllTweets(account_name, number_of_tweets, api, verbose):
+    createVerbose(verbose, "Obteniendo tweets")
     """Función para obtener los n tweets que se manden en la bandera -n, por defecto será uno. Los tweets solicitados serán almacenados y devueltos en una lista.
     Recibe: api, usuario y número de tweets a obtener. Devuelve: lista con todos los tweets solicitados"""
     return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items(number_of_tweets)]
 
-def getAllTweetsMentions(api, account_name, number_of_tweets):
+def getAllTweetsMentions(api, account_name, number_of_tweets,verbose):
+    createVerbose(verbose, "Calculando menciones del usuario")
     """Función para obtener los n tweets donde se haga mención del usuario analizados, por defecto será uno. Los tweets encontrados serán almacenados y devueltos en una lista.
     Recibe: api, usuario y número de tweets a buscar. Devuelve: lista con todos los tweets donde se mencione al usuario"""
     return [tweet for tweet in tweepy.Cursor(api.search,q='@%s -RT' % account_name).items(number_of_tweets) ]
@@ -144,14 +152,16 @@ def getTweetFragment(tweet):
     return tweet.text.encode('utf8')[:31]
 
 
-def urlForTweet(statistic_object, tweet):
+def urlForTweet(statistic_object, tweet, verbose):
+    createVerbose(verbose, "Obteniendo la url")
     tweet_id = getTweetId(tweet)
     screen_name = tweet.author.screen_name.encode('utf8')
     url = 'https://twitter.com/%s/status/%s'%(screen_name,tweet_id)
     statistic_object.analized_tweets_url[tweet_id] = Tweet(getTweetDate(tweet), getTweetFragment(tweet), url)
     return True
 
-def tweetToOtherAccounts(statistic_object, tweet):
+def tweetToOtherAccounts(statistic_object, tweet, verbose):
+    createVerbose(verbose, "Obteniendo tweets generados a otras cuentas") 
     texto = tweet.text.encode('utf-8')
     screen_name = tweet.author.screen_name.encode('utf8')
     if texto.startswith("RT @"):
@@ -163,7 +173,8 @@ def tweetToOtherAccounts(statistic_object, tweet):
     return True
 
 
-def tweetDevice(statistic_object, tweet):
+def tweetDevice(statistic_object, tweet, verbose):
+    createVerbose(verbose, "Obteniendo información de los dispostivos que han ocupado esta cuenta") 
     tweet_id = getTweetId(tweet)
     j = dumpTweetToJson(tweet)['source'].lower()
     if 'iphone' in j:
@@ -184,12 +195,14 @@ def tweetDevice(statistic_object, tweet):
         return 'windows'
     return ''
 
-def getActivityByHour(statistic_object, tweet):
+def getActivityByHour(statistic_object, tweet, verbose):
+    createVerbose(verbose, "Obteniendo la actividad por hora")
     date = getTweetDate(tweet).split(' ')[1].split(':')[0]
     statistic_object.activity_by_hour[int(date)] += 1
     return True
 
-def getHourOfActivity(statistic_object):
+def getHourOfActivity(statistic_object, verbose):
+    createVerbose(verbose, "Obteniendo la hora con mayor actividad") 
     mayor = max(statistic_object.activity_by_hour)
     size  = len(statistic_object.activity_by_hour)
     s = 0
@@ -199,9 +212,9 @@ def getHourOfActivity(statistic_object):
             s += 1
     return statistic_object.hour_of_max_activity
 
-def tweetGeolocalization(statistic_object, tweet):
+def tweetGeolocalization(statistic_object, tweet, verbose):
     try:
-
+        createVerbose(verbose, "Obteniendo la localización)
         j = dumpTweetToJson(tweet)
         if not j['geo']:
             #print 'No se puede obtener la geolocalizacion'
@@ -212,7 +225,8 @@ def tweetGeolocalization(statistic_object, tweet):
         return False
     return True
 
-def startAnalisys():
+def startAnalisys(verbose):
+                    
     opts = addOptions()
     checkOptions(opts)
     account_analisys = AccountStatistics()
@@ -225,6 +239,7 @@ def startAnalisys():
     infoUsuario(api,opts.usuario)
     #print len(tweets)
     #raw_input()
+    createVerbose(verbose, "Empezando a hacer el análisis") 
     for tweet in tweets:
         urlForTweet(account_analisys, tweet)
         tweetToOtherAccounts(account_analisys,tweet)
