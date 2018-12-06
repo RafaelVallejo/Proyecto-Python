@@ -3,9 +3,10 @@
 class AccountStatistics(object):
 
     def __init__(self):
-        self.used_hashtags = 0
+        self.number_used_hashtags = 0
+        self.list_used_hashtags = []
         self.tweets_for_day = {}
-        self.activity_by_hour = [0]*24 
+        self.activity_by_hour = [0]*24
         self.hour_of_max_activity = ''
         self.number_of_tweets_to_other_site = 0
         self.list_of_tweets_to_other_site = []
