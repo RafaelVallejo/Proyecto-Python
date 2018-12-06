@@ -1,3 +1,5 @@
+from datetime import datetime
+
 def obtener_estadistica(objeto):
 	html = '''
 <!DOCTYPE html>
@@ -109,7 +111,10 @@ def obtener_estadistica(objeto):
 	
 def listaToCadena(lista): 
 	cadena = ",".join(lista)
-		
+
+	
+def ImprimirFechaHoraCreacion(): 
+	print datetime.now()
 
 
 
