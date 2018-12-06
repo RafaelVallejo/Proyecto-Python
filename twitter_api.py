@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 #UNAM-CERT
 
+import json
 import tweepy
 import auth_credentials as cred
 import optparse
 import sys
-import acount_statistics
+from account_statistics import AccountStatistics, Tweet
 def authenticate():
     auth = tweepy.OAuthHandler(cred.consumer_key, cred.consumer_secret)
     auth.set_access_token(cred.access_token, cred.access_token_secret)
@@ -62,39 +63,128 @@ def hashtagsUtilizados(api, usuario):
     lista_hashtags = list(set(lista_hashtags))
     return lista_hashtags
 
-def getAllTweets(account_name, number_of_tweets):
+def getAllTweets(account_name, number_of_tweets, api):
     try:
         return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items(number_of_tweets)]
     except tweepy.TweepError as e:
         printError('Usuario no encontrado',True)
 
-
-
 def dumpTweetToJson(tweet):
-    return json.dumps(tweet._json)
+    return json.loads(json.dumps(tweet._json))
 
-def printTweetInfo(tweet):
-    print "Name:", tweet.author.name.encode('utf8')
-    print "Screen-name:", tweet.author.screen_name.encode('utf8')
-    print "Tweet created:", tweet.created_at
-    print "Tweet:", tweet.text.encode('utf8')
-    print "Retweeted:", tweet.retweeted
-    print "Favourited:", tweet.favorited
-    print "Location:", tweet.user.location.encode('utf8')
-    print "Time-zone:", tweet.user.time_zone
-    print "Geo:", tweet.geo
-    print "//////////////////"
-    
+def getTweetId(tweet):
+    return tweet.id_str.encode('utf8')
+
+def getTweetDate(tweet):
+    return str(tweet.created_at)
+
+def getTweetFragment(tweet):
+    return tweet.text.encode('utf8')[:31]
+
+
+def urlForTweet(statistic_object, tweet):
+    tweet_id = getTweetId(tweet)
+    screen_name = tweet.author.screen_name.encode('utf8')
+    url = 'https://twitter.com/%s/status/%s'%(screen_name,tweet_id)
+    statistic_object.analized_tweets_url[tweet_id] = Tweet(getTweetDate(tweet), getTweetFragment(tweet), url)
+    return True
+
+def tweetToOtherAccounts(statistic_object, tweet):
+    texto = tweet.text.encode('utf-8')
+    screen_name = tweet.author.screen_name.encode('utf8')
+    if texto.startswith("RT @"):
+        return False
+    mentions = tweet.entities.get('user_mentions')
+    if not not mentions:
+        statistic_object.tweets_generated_other_accounts += 1
+        statistic_object.list_tweets_generated_other_accounts.append(getTweetId(tweet))
+    return True
+
+
+def tweetDevice(statistic_object, tweet):
+    tweet_id = getTweetId(tweet)
+    j = dumpTweetToJson(tweet)['source'].lower()
+    if 'iphone' in j:
+        statistic_object.tweets_with_device_info += 1
+        statistic_object.list_of_tweets_device_info.append((tweet_id, 'iphone'))
+        return 'iphone'
+    elif 'android' in j:
+        statistic_object.tweets_with_device_info += 1
+        statistic_object.list_of_tweets_device_info.append((tweet_id,'android'))
+        return 'android'
+    elif 'web' in j:
+        statistic_object.tweets_with_device_info += 1
+        statistic_object.list_of_tweets_device_info.append((tweet_id,'web'))
+        return 'web'
+    elif 'windows' in j:
+        statistic_object.tweets_with_device_info += 1
+        statistic_object.list_of_tweets_device_info.append((tweet_id,'windows'))
+        return 'windows'
+    return ''
+
+def getActivityByHour(statistic_object, tweet):
+    date = getTweetDate(tweet).split(' ')[1].split(':')[0]
+    statistic_object.activity_by_hour[int(date)] += 1
+    return True
+
+def getHourOfActivity(statistic_object):
+    mayor = max(statistic_object.activity_by_hour)
+    size  = len(statistic_object.activity_by_hour)
+    s = 0
+    for i in range(size):
+        if mayor == statistic_object.activity_by_hour[i]:
+            statistic_object.hour_of_max_activity += '%s:00:00 - %s:59:59'%(i,i) if s == 0 else '  and  %s:00:00 - %s:59:59'%(i,i)
+            s += 1
+    return statistic_object.hour_of_max_activity
+
+def tweetGeolocalization(statistic_object, tweet):
+    try:
+
+        j = dumpTweetToJson(tweet)
+        if not j['geo']:
+            #print 'No se puede obtener la geolocalizacion'
+            return False
+        statistics_object.tweets_geolocalizados += 1
+        statistics_object.list_of_tweets_geolocalizados.append((getTweetId(tweet),tupe(j['coordinates'])))
+    except Exception as e:
+        return False
+    return True
+
 def startAnalisys():
     opts = addOptions()
     checkOptions(opts)
-    accout_analisys = AccountStatistics()
+    account_analisys = AccountStatistics()
     api = authenticate()
     if opts.help:
         muestraAyuda()
         printError('',True)
-    for tweet in getAllTweets(opts.usuario, 2000):
-        pass
+    tweets = getAllTweets(opts.usuario, 20, api)
+
+    #print len(tweets)
+    #raw_input()
+    for tweet in tweets:
+        urlForTweet(account_analisys, tweet)
+        tweetToOtherAccounts(account_analisys,tweet)
+        tweetDevice(account_analisys, tweet)
+        tweetGeolocalization(account_analisys, tweet)
+        getActivityByHour(account_analisys, tweet)
+    
+    """for k,v in account_analisys.analized_tweets_url.items():
+        print '%s   %s'%(k,v)
+
+
+    print '\n\n****************************************************'
+    for tw in account_analisys.list_tweets_generated_other_accounts:
+        print account_analisys.analized_tweets_url[tw]
+    print account_analisys.tweets_generated_other_accounts
+    print len(account_analisys.list_tweets_generated_other_accounts)
+    print '\n\n****************************************************'
+    print account_analisys.tweets_with_device_info
+    print len(account_analisys.list_of_tweets_device_info)
+    for e in account_analisys.list_of_tweets_device_info:
+        print e[1]
+    print '\n\n****************************************************'"""
+    getHourOfActivity(account_analisys)
         
  
 if __name__ == '__main__':
