@@ -24,7 +24,7 @@ def addOptions():
     parser.add_option('-h', '--help', action='store_true', dest= 'help', default = False, help = 'Muestra las opciones disponibles.')
     parser.add_option('-c', '--usuario', dest= 'usuario', default = None, help = 'Cuenta de usuario a analizar.')
     parser.add_option('-v', '--verboso', action='store_true', dest = 'verboso', default = False, help = 'Muestra los pasos que se realizan.')
-    parser.add_option('-o', '--reporte', dest= 'reporte', default = 'resultados_generados.html', help = 'Indica el nombre del archivo dónde se escribirá el reporte.')
+    parser.add_option('-o', '--reporte', dest= 'reporte', default = 'resultados_generados', help = 'Indica el nombre del archivo dónde se escribirá el reporte, si no se indica se guadan por defecto en \"resultados_generados.html\".')
     parser.add_option('-n', '--tweets', dest = 'tweets', type = 'int', default = 1, help = 'Indica el número de tweets a analizar de 1 a 3000.')
     opts,args = parser.parse_args()
     return opts
@@ -54,7 +54,7 @@ def muestraAyuda():
     -h, --help      Muestra el mensaje de ayuda y las opciones disponibles.\n\
     -c, --usuario   Cuenta de usuario a analizar.\n\
     -v, --verboso   Muestra los pasos que se realizan.\n\
-    -o, --reporte   Indica el nombre del archivo dónde se escribirá el reporte.\n\
+    -o, --reporte   Indica el nombre del archivo dónde se escribirá el reporte, si no se indica se guadan por defecto en \"resultados_generados.html\".\n\
     -n', '--tweets  Indica el número de tweets a analizar de 1 a 3000.'
 
 def infoUsuario(api, usuario, verbose):
@@ -62,12 +62,15 @@ def infoUsuario(api, usuario, verbose):
     """Función que obtiene la información del usuario a analizar mediante la bandera -c usuario
     Recibe: api y usuario a analizar"""
     user = api.get_user(usuario)
-    print 'Nombre: ' + user.name
-    print'Nombre de usuario: @' + user.screen_name
-    print 'Imagen de perfil: %s' % (user.profile_image_url)
-    print 'Fecha de creación de la cuenta: %s' % (user.created_at.strftime("%d/%m/%Y"))
-    print 'Número de tweets: %s' % (user.statuses_count)
-    print 'Número de tweets agregados a favoritos: %s' % (user.favourites_count)
+    infoCuenta = '<b>Nombre:</b> %s<br><b>Nombre de usuario:</b> @%s<br><b>Imagen de perfil:</b> <a href=\"%s\">%s<a><br><b>Fecha de creacion de la cuenta:</b> %s<br>\
+                  <b>Numero de tweets:</b> %s<br><b>Numero de tweets agregados a favoritos:</b> %s' % (user.name,
+                                                                    user.screen_name,
+                                                                    user.profile_image_url,user.profile_image_url,
+                                                                    user.created_at.strftime("%d/%m/%Y").encode('utf8'),
+                                                                    user.statuses_count,
+                                                                    user.favourites_count)
+    return infoCuenta
+
 
 def hashtagsUtilizados(statistic_object, tweet, verbose):
     createVerbose(verbose, "Buscando hashtags utilizados")
@@ -120,7 +123,6 @@ def linksToMultiMedia(statistics_object, tweet, verbose):
             else:
                 enlace = linkToMutimedia['media_url'].encode('utf8')
             statistics_object.content_multimedia_tweets_url.append(enlace)
-
 def fillInfoNumbers(statistics_object):
     statistics_object.tweets_mention_accout = len(statistics_object.list_tweets_mention_accout)
     statistics_object.number_of_tweets_to_other_site = len(statistics_object.list_of_tweets_to_other_site)
@@ -131,7 +133,7 @@ def getAllTweets(account_name, number_of_tweets, api, verbose):
     createVerbose(verbose, "Obteniendo tweets")
     """Función para obtener los n tweets que se manden en la bandera -n, por defecto será uno. Los tweets solicitados serán almacenados y devueltos en una lista.
     Recibe: api, usuario y número de tweets a obtener. Devuelve: lista con todos los tweets solicitados"""
-    return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name).items(number_of_tweets)]
+    return [tweet for tweet in tweepy.Cursor(api.user_timeline,id=account_name, tweet_mode = 'extended').items(number_of_tweets)]
 
 def getAllTweetsMentions(api, account_name, number_of_tweets,verbose):
     createVerbose(verbose, "Calculando menciones del usuario")
@@ -149,7 +151,7 @@ def getTweetDate(tweet):
     return str(tweet.created_at)
 
 def getTweetFragment(tweet):
-    return tweet.text.encode('utf8')[:31]
+    return tweet.full_text.encode('utf8')[:31]
 
 
 def urlForTweet(statistic_object, tweet, verbose):
@@ -157,12 +159,12 @@ def urlForTweet(statistic_object, tweet, verbose):
     tweet_id = getTweetId(tweet)
     screen_name = tweet.author.screen_name.encode('utf8')
     url = 'https://twitter.com/%s/status/%s'%(screen_name,tweet_id)
-    statistic_object.analized_tweets_url[tweet_id] = Tweet(getTweetDate(tweet), getTweetFragment(tweet), url)
+    statistic_object.analized_tweets_url[tweet_id] = Tweet(getTweetDate(tweet), getTweetFragment(tweet) + '...', url)
     return True
 
 def tweetToOtherAccounts(statistic_object, tweet, verbose):
     createVerbose(verbose, "Obteniendo tweets generados a otras cuentas")
-    texto = tweet.text.encode('utf-8')
+    texto = tweet.full_text.encode('utf-8')
     screen_name = tweet.author.screen_name.encode('utf8')
     if texto.startswith("RT @"):
         return False
@@ -225,6 +227,13 @@ def tweetGeolocalization(statistic_object, tweet, verbose):
         return False
     return True
 
+def infoScript():
+    banderas = ''
+    for args in sys.argv[1:]:
+        banderas += args + ' '
+    return 'Las banderas utilizadas fueron: ' + banderas
+
+
 def startAnalisys():
 
     opts = addOptions()
@@ -237,7 +246,7 @@ def startAnalisys():
         printError('',True)
     tweets = getAllTweets(opts.usuario, opts.tweets, api, verbose)
     dias = [0, 0, 0, 0, 0, 0, 0]
-    infoUsuario(api,opts.usuario, verbose)
+    infoUser = infoUsuario(api,opts.usuario, verbose)
     #print len(tweets)
     #raw_input()
     createVerbose(verbose, "Empezando a hacer el análisis")
@@ -258,8 +267,7 @@ def startAnalisys():
     getHourOfActivity(account_analisys, verbose)
     llenaDiccionarioTweetsDias(account_analisys.tweets_for_day, dias)
     fillInfoNumbers(account_analisys)
-    estad.obtener_estadistica(account_analisys, opts.reporte)
-
+    estad.obtener_estadistica(account_analisys, opts.reporte, infoUser, infoScript())
 
 if __name__ == '__main__':
     try:
