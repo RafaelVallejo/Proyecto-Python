@@ -1,6 +1,9 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#UNAM-CERT
 from datetime import datetime
 
-def obtener_estadistica(objeto):
+def obtener_estadistica(objeto, reporte):
 	html = '''
 <!DOCTYPE html>
 <html>
@@ -17,7 +20,7 @@ def obtener_estadistica(objeto):
 	<body>
 
 		<div class="jumbotron">
-			<h3 align="center">Estadistica</h3>
+			<h3 align="center">Estadistica %s</h3>
 		</div>
 
 		<div class="container">
@@ -29,7 +32,7 @@ def obtener_estadistica(objeto):
 				  <div class="form-group">
 				    <label for="username">Hashtags utilizados: </label>
 				    <input type="text" class="form-control" id="Hashtags_utilizados" name = "Hashtags_utilizados" readonly placeholder = %s>
-				  </div>	
+				  </div>
 				  <div class="form-group">
 				    <label for="Tweets_Day">Tweets por día de la semana: </label>
 				    <input type="text" class="form-control" id="Tweets_Day" name="Tweets_Day" readonly placeholder = %s>
@@ -83,38 +86,36 @@ def obtener_estadistica(objeto):
 				    <input type="text" class="form-control" id="multimedia" name="multimedia" readonly=".." placeholder = %s>
 				  </div>
 				</div>
-			</div>	
+			</div>
 		</div>
 	</body>
 </html>
 
-''' % (objeto.used_hashtags, 
+''' % (ImprimirFechaHoraCreacion(),
+	   objeto.number_used_hashtags,
 	   objeto.tweets_for_day,
-	   objeto.hour_of_max_activity, 
-	   objeto.number_of_tweets_to_other_site, 
+	   objeto.hour_of_max_activity,
+	   objeto.number_of_tweets_to_other_site,
 	   listaToCadena(objeto.list_of_tweets_to_other_site),
-	   objeto.tweets_geolocalizados, 
+	   objeto.tweets_geolocalizados,
 	   listaToCadena(objeto.list_of_tweets_geolocalizados),
 	   objeto.tweets_with_device_info,
-	   listaToCadena(objeto.list_of_tweets_device_info),
-	   objeto.tweets_generated_other_accounts 
+	   #listaToCadena(objeto.list_of_tweets_device_info),
+	   objeto.tweets_generated_other_accounts,
 	   listaToCadena(objeto.list_tweets_generated_other_accounts),
-	   objeto.tweets_mention_accout, 
+	   objeto.tweets_mention_accout,
 	   listaToCadena(objeto.list_tweets_mention_accout),
 	   objeto.analized_tweets_url,
-	   objeto.content_multimedia_tweets_url
+	   listaToCadena(objeto.content_multimedia_tweets_url)
 	   )
 
-		
-	with open ("resultados_generados.html" , 'w') as resultados: 
+
+	with open (reporte , 'w') as resultados:
 		resultados.write(html)
-	
-def listaToCadena(lista): 
+
+def listaToCadena(lista):
 	cadena = ",".join(lista)
+	return cadena
 
-	
-def ImprimirFechaHoraCreacion(): 
-	print datetime.now()
-
-
-
+def ImprimirFechaHoraCreacion():
+	return datetime.now()
