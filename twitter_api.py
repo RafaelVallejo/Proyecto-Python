@@ -7,7 +7,7 @@ import tweepy
 import auth_credentials as cred
 import optparse
 import sys
-from account_statistics import AccountStatistics, Tweet
+from acount_statistics import AccountStatistics, Tweet
 def authenticate():
     auth = tweepy.OAuthHandler(cred.consumer_key, cred.consumer_secret)
     auth.set_access_token(cred.access_token, cred.access_token_secret)
