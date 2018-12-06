@@ -235,7 +235,7 @@ def startAnalisys():
     if opts.help:
         muestraAyuda()
         printError('',True)
-    tweets = getAllTweets(opts.usuario, 20, api, verbose)
+    tweets = getAllTweets(opts.usuario, opts.tweets, api, verbose)
     dias = [0, 0, 0, 0, 0, 0, 0]
     infoUsuario(api,opts.usuario, verbose)
     #print len(tweets)
@@ -252,24 +252,9 @@ def startAnalisys():
         linksToMultiMedia(account_analisys, tweet, verbose)
         tweetsPerDay(dias, tweet, verbose)
 
-    for tweet in getAllTweetsMentions(api, opts.usuario, 15, verbose):  # Checar limite de 100
+    for tweet in getAllTweetsMentions(api, opts.usuario, opts.tweets, verbose):  # Checar limite de 100
         account_analisys.list_tweets_mention_accout.append('@'+tweet.author.screen_name.encode('utf8'))
-
-    """for k,v in account_analisys.analized_tweets_url.items():
-        print '%s   %s'%(k,v)
-
-
-    print '\n\n****************************************************'
-    for tw in account_analisys.list_tweets_generated_other_accounts:
-        print account_analisys.analized_tweets_url[tw]
-    print account_analisys.tweets_generated_other_accounts
-    print len(account_analisys.list_tweets_generated_other_accounts)
-    print '\n\n****************************************************'
-    print account_analisys.tweets_with_device_info
-    print len(account_analisys.list_of_tweets_device_info)
-    for e in account_analisys.list_of_tweets_device_info:
-        print e[1]
-    print '\n\n****************************************************'"""
+        
     getHourOfActivity(account_analisys, verbose)
     llenaDiccionarioTweetsDias(account_analisys.tweets_for_day, dias)
     fillInfoNumbers(account_analisys)
