@@ -10,7 +10,7 @@ import sys
 from account_statistics import AccountStatistics, Tweet
 import datetime
 import json
-
+import estadistica as estad
 def authenticate():
     """Función para autorizar acceso del script a la cuenta de Twitter
     Devuelve la sesión autorizada y disponible para usar la API de Twitter"""
@@ -24,7 +24,7 @@ def addOptions():
     parser.add_option('-h', '--help', action='store_true', dest= 'help', default = False, help = 'Muestra las opciones disponibles.')
     parser.add_option('-c', '--usuario', dest= 'usuario', default = None, help = 'Cuenta de usuario a analizar.')
     parser.add_option('-v', '--verboso', action='store_true', dest = 'verboso', default = False, help = 'Muestra los pasos que se realizan.')
-    parser.add_option('-o', '--reporte', dest= 'reporte', default = None, help = 'Indica el nombre del archivo dónde se escribirá el reporte.')
+    parser.add_option('-o', '--reporte', dest= 'reporte', default = 'resultados_generados.html', help = 'Indica el nombre del archivo dónde se escribirá el reporte.')
     parser.add_option('-n', '--tweets', dest = 'tweets', type = 'int', default = 1, help = 'Indica el número de tweets a analizar de 1 a 3000.')
     opts,args = parser.parse_args()
     return opts
@@ -254,10 +254,12 @@ def startAnalisys():
 
     for tweet in getAllTweetsMentions(api, opts.usuario, opts.tweets, verbose):  # Checar limite de 100
         account_analisys.list_tweets_mention_accout.append('@'+tweet.author.screen_name.encode('utf8'))
-        
+
     getHourOfActivity(account_analisys, verbose)
     llenaDiccionarioTweetsDias(account_analisys.tweets_for_day, dias)
     fillInfoNumbers(account_analisys)
+    estad.obtener_estadistica(account_analisys, opts.reporte)
+
 
 if __name__ == '__main__':
     try:
