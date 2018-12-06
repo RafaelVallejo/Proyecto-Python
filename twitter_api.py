@@ -29,6 +29,10 @@ def addOptions():
     opts,args = parser.parse_args()
     return opts
 
+def createVerbose(verbose, string): 
+    if verbose: 
+        print string
+        
 def printError(msg, exit = False):
     """Función que imprime mensaje de error y sale del programa
         Recibe: mensaje a mostrar y booleano que indica si se debe terminar la ejecución del programa"""
